@@ -37,7 +37,7 @@ echo "'$1' is not a valid file"
 fi
 }
 
-function() set_mail{
+function set_mail() {
 #Check mail service exist or not~
 if [ -f /etc/postfix/main.cf ] ; then
 	sudo sed -i "s/myhostname =.*/myhostname = ${HOSTNAME}/;s/mydestination =.*/mydestination = ${HOSTNAME},l
