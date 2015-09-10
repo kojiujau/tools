@@ -66,3 +66,121 @@ EOF
 	echo -e "\n${HOSTNAME} Mail service installation done!!!\n"
 fi
 }
+
+
+function get_suffix() {
+	if [ -z "$LDAP_SUFFIX" ]; then
+		old_ifs=${IFS}
+		IFS="."
+		for component in $DOMAIN; do
+			result="$result,dc=$component"
+		done
+		IFS="${old_ifs}"
+		LDAP_SUFFIX="${result#,}"
+	fi
+	return 0
+}
+
+
+function ifdev() {
+IF=(`cat /proc/net/dev | grep ':' | cut -d ':' -f 1 | tr '\n' ' '`)
+}
+
+function firstdev() {
+ifdev
+LAN_INTERFACE=${IF[1]}
+}
+
+function get_domain() {
+	if [ "$DOMAIN"="" ]; then
+		_DOMAIN_=`$HOSTNAME -d`
+		if [ -z "$_DOMAIN_" ]; then
+				echo -n "In put server domain [example.com] "
+				read _DOMAIN_
+				if [ ! -z "$_DOMAIN_" ]; then
+					DOMAIN=$_DOMAIN_
+				else
+					echo "Error: Server domain doesn't exist!"
+					exit 1
+				fi
+		else
+			#usamos el dominio configurado del host
+			DOMAIN=$_DOMAIN_
+		fi
+	fi
+	return 0
+}
+
+function get_hostname() {
+	if [ -z "$HOSTNAME_PREFIX" ]; then
+		_HOST_=`$HOSTNAME -s`
+		if [ -z "$_HOST_" ]; then
+			echo -n "Hostname missing: What hostname do you wish for this directory server? [$HOSTNAME_PREFIX]: "
+            read _HOSTNAME_
+            if [ ! -z "$_HOSTNAME_" ]; then
+            	HOSTNAME_PREFIX=$_HOSTNAME_
+            else
+            	echo "Hostname missing: missing server name"
+                exit 1
+            fi
+        else
+        	HOSTNAME_PREFIX=$_HOST_
+		fi
+	fi
+	return 0
+}
+
+function servername() {
+	get_hostname
+	if [ "$?" -ne "0" ]; then
+		echo "Error hostname doesn't exist"
+		exit 1
+	fi
+	get_domain
+	if [ "$?" -ne "0" ]; then
+		echo "Error domain doesn't exist"
+		exit 1
+	fi	
+	SERVERNAME="$HOSTNAME_PREFIX.$DOMAIN"
+}
+
+function get_admin_password() {
+	echo
+	echo "In put a password for service admin"
+	echo
+	echo "The LDAP service admin login cn is: "
+	echo "cn=admin,$LDAP_SUFFIX"
+	echo 
+	echo "The LDAP cn=config is:"
+	echo "cn=admin,cn=config"
+	while /bin/true; do
+        echo -n "New password: "
+        stty -echo
+        read pass1
+        stty echo
+        echo
+        if [ -z "$pass1" ]; then
+            echo "Error, password cannot be empty"
+            echo
+            continue
+        fi
+        echo -n "Repeat new password: "
+        stty -echo
+        read pass2
+        stty echo
+        echo
+        if [ "$pass1" != "$pass2" ]; then
+            echo "Error, passwords don't match"
+            echo
+            continue
+        fi
+        PASS="$pass1"
+        break
+	done
+    if [ -n "$PASS" ]; then
+        return 0
+    fi
+    return 1
+}
+
+## end functions ####
