@@ -183,4 +183,13 @@ function get_admin_password() {
     return 1
 }
 
+function Get_IP_info() {
+# Tell us the IP
+    echo " "
+    IP=$(ip addr | grep enp0s8| grep inet | awk '{ print $2 }' | sed -e 's/\/24//')
+    Public_IP=$(wget http://ipecho.net/plain -O - -q ; echo)
+    echo "Your private IP is: $IP"
+    echo "Your public IP is: $Public_IP"
+}
+
 ## end functions ####
